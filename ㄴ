@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>스토보클로 투여 알림</title>
+
+<style>
+
+body{
+    margin:0;
+    font-family:"Noto Sans KR", sans-serif;
+    background:#f3f6fb;
+    text-align:center;
+}
+
+.container{
+    max-width:520px;
+    margin:auto;
+    padding:20px;
+}
+
+.card{
+    background:white;
+    border-radius:24px;
+    padding:30px;
+    box-shadow:0 10px 25px rgba(0,0,0,0.08);
+}
+
+h1{ font-size:30px; }
+
+.sub{
+    color:#666;
+    font-size:18px;
+    margin-bottom:20px;
+}
+
+button{
+    width:100%;
+    padding:20px;
+    font-size:22px;
+    margin:10px 0;
+    border:none;
+    border-radius:14px;
+    cursor:pointer;
+}
+
+.yes{ background:#2E7D32; color:white; }
+.no{ background:#1565C0; color:white; }
+.gray{ background:#555; color:white; }
+
+input[type=date]{
+    width:100%;
+    padding:18px;
+    font-size:22px;
+    border-radius:12px;
+    border:1px solid #ccc;
+}
+
+.box{ display:none; margin-top:10px; }
+
+.result{
+    display:none;
+    margin-top:20px;
+    padding:20px;
+    background:#f8fafc;
+    border-radius:16px;
+}
+
+.result h2{
+    color:#2E7D32;
+    font-size:28px;
+}
+
+.info{
+    font-size:24px;
+    margin:10px 0;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<div class="card">
+
+<h1>💉 투여 알림</h1>
+
+<div class="sub">
+오늘 주사를 맞으셨나요?
+</div>
+
+<button class="yes" onclick="yesToday()">
+예, 오늘 맞았습니다
+</button>
+
+<button class="no" onclick="showInput()">
+아니오 (날짜 선택)
+</button>
+
+<div class="box" id="box">
+
+<input type="date" id="date">
+
+<button class="yes" onclick="calcFromDate()">
+계산하기
+</button>
+
+<button class="gray" onclick="resetUI()">
+초기화
+</button>
+
+</div>
+
+<div class="result" id="result">
+
+<h2>다음 투여일</h2>
+
+<div class="info" id="next"></div>
+<div class="info" id="remain"></div>
+
+<button class="gray" onclick="saveCalendar()">
+📅 캘린더 저장
+</button>
+
+<button class="gray" onclick="resetUI()">
+다시하기
+</button>
+
+</div>
+
+</div>
+</div>
+
+<script>
+
+let nextDate=null;
+
+/* 초기화 */
+function resetUI(){
+
+nextDate=null;
+
+document.getElementById("box").style.display="none";
+document.getElementById("result").style.display="none";
+document.getElementById("date").value="";
+
+}
+
+/* 예 (오늘) */
+function yesToday(){
+
+resetUI();
+
+let d=new Date();
+calc(d);
+
+}
+
+/* 아니오 */
+function showInput(){
+
+resetUI();
+document.getElementById("box").style.display="block";
+
+}
+
+/* 입력 계산 */
+function calcFromDate(){
+
+let value=document.getElementById("date").value;
+
+if(!value){
+alert("날짜를 선택해주세요.");
+return;
+}
+
+let d=new Date(value);
+calc(d);
+
+}
+
+/* 계산 */
+function calc(d){
+
+d.setMonth(d.getMonth()+6);
+nextDate=d;
+
+let today=new Date();
+
+let diff=Math.ceil((nextDate-today)/(1000*60*60*24));
+
+document.getElementById("next").innerHTML=
+nextDate.getFullYear()+"년 "
++(nextDate.getMonth()+1)+"월 "
++nextDate.getDate()+"일";
+
+document.getElementById("remain").innerHTML=
+"남은 기간: "+diff+"일";
+
+document.getElementById("result").style.display="block";
+
+document.getElementById("box").style.display="none";
+
+}
+
+/* =========================
+   📅 캘린더 (iOS / Android)
+========================= */
+function saveCalendar(){
+
+if(!nextDate){
+alert("먼저 날짜를 선택해주세요.");
+return;
+}
+
+let y=nextDate.getFullYear();
+let m=String(nextDate.getMonth()+1).padStart(2,"0");
+let d=String(nextDate.getDate()).padStart(2,"0");
+
+let date=y+m+d;
+
+let ua=navigator.userAgent.toLowerCase();
+
+/* =========================
+   🍎 iOS
+========================= */
+if(ua.includes("iphone") || ua.includes("ipad")){
+
+let ics =
+"BEGIN:VCALENDAR\r\n"+
+"VERSION:2.0\r\n"+
+"CALSCALE:GREGORIAN\r\n"+
+"BEGIN:VEVENT\r\n"+
+"SUMMARY:스토보클로 투여일\r\n"+
+"DTSTART:"+date+"T090000\r\n"+
+"DTEND:"+date+"T093000\r\n"+
+"DESCRIPTION:스토보클로 투여 일정 - 서울내과의원 / 062-363-8575\r\n"+
+"END:VEVENT\r\n"+
+"END:VCALENDAR";
+
+let blob=new Blob([ics],{type:"text/calendar;charset=utf-8"});
+let url=URL.createObjectURL(blob);
+
+window.open(url,"_blank");
+
+setTimeout(()=>URL.revokeObjectURL(url),10000);
+
+}
+
+/* =========================
+   🤖 Android
+========================= */
+else{
+
+let url=
+"https://calendar.google.com/calendar/render?action=TEMPLATE"
++"&text="+encodeURIComponent("스토보클로 투여일")
++"&dates="+date+"T090000/"+date+"T093000"
++"&details="+encodeURIComponent("스토보클로 투여 일정 - 서울내과의원 / 062-363-8575");
+
+location.href=url;
+
+}
+
+}
+
+</script>
+
+</body>
+</html>
